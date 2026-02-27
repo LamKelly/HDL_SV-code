@@ -20,7 +20,17 @@ case (F)
 endcase
 end
 
-zero32 u_zero(.Y(Y), .zero(zero));
+always @(*) begin 
+OF = 1'b0;
+
+if (F == 3'b010) begin 
+    OF = (-(A[31] ^B[31])) & (sum[31]^A[31]);
+end
+else if (F == 3'b110) begin 
+        OF = (A[31] ^ B[31] & (sum[31] ^A[31]);
+    end 
+end
+    zero32 u_zero(.Y(Y), .zero(zero));
 endmodule
 
 module b_invert32(
@@ -43,3 +53,4 @@ module zero32(
     assign zero = (Y == 32'h0000_0000);
 endmodule
     
+
