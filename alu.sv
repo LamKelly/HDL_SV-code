@@ -1,15 +1,3 @@
-// alu.sv
-// 32-bit ALU matching the required interface.
-// F encoding (from your picture):
-// 000: A AND B
-// 001: A OR  B
-// 010: A +  B
-// 011: not used (outputs 0 here)
-// 100: A AND ~B
-// 101: A OR  ~B
-// 110: A -  B
-// 111: SLT (set-on-less-than, signed): Y = 1 if A < B else 0
-
 module alu(
     input  logic [31:0] A, B,
     input  logic [2:0]  F,
@@ -17,39 +5,51 @@ module alu(
     output logic        zero
 );
 
-    // Internal results for each operation
-    logic [31:0] and_ab, or_ab, and_anb, or_anb;
-    logic [31:0] add_y, sub_y, slt_y;
+    assign cin = F[2];
+b_invert32 u_binv(.B(B), .sel(F[2]), .Bout(Bout));
+add32 u_add(.A(A), .B(Bout), .cin(cin), .S(sum));
 
-    // Add/Sub using built-in operators (synthesizes fine in Quartus)
-    assign add_y = A + B;
-    assign sub_y = A - B;
+always @(*) begin
+case (F)
+        3'b000: Y = A&Bout;
+        3'b001: Y = A|Bout;
+        3'b010: Y = sum;
+        3'b110: Y = sum;
+        3'b000: Y = {31'b0, sum[31]};
+        default: Y = 32'h0000_0000;
+endcase
+end
 
-    // Logic ops (include ~B versions per truth table)
-    assign and_ab  = A & B;
-    assign or_ab   = A | B;
-    assign and_anb = A & ~B;
-    assign or_anb  = A | ~B;
+zero32 u_zero(.Y(Y), .zero(zero));
+always @(*) begin 
+OF = 1'b0;
 
-    // Signed set-less-than: result is 32'h00000001 if A < B else 0
-    assign slt_y = ($signed(A) < $signed(B)) ? 32'h00000001 : 32'h00000000;
+if (F == 3'b010) begin 
+    OF = (-(A[31] ^B[31])) & (sum[31]^A[31]);
+end
+else if (F == 3'b110) begin 
+        OF = (A[31] ^ B[31] & (sum[31] ^A[31]);
+    end 
+end
+    zero32 u_zero(.Y(Y), .zero(zero));
+endmodule
 
-    // Select output based on F
-    always_comb begin
-        unique case (F)
-            3'b000: Y = and_ab;
-            3'b001: Y = or_ab;
-            3'b010: Y = add_y;
-            3'b011: Y = 32'h00000000;   // not used
-            3'b100: Y = and_anb;
-            3'b101: Y = or_anb;
-            3'b110: Y = sub_y;
-            3'b111: Y = slt_y;
-            default: Y = 32'h00000000;
-        endcase
-    end
+module b_invert32(
+    input logic[31:0] B,
+    input logic       sel,
+    output logic [31:0] Bout);
+    assign Bout = B^{31{sel}};
+endmodule
 
-    // zero flag: TRUE when Y == 0
-    assign zero = (Y == 32'h00000000);
+module add32(
+    input logic [31:0] A,B,
+    input logic         cin,
+    output logic [31:0] S );
+    assign A = A +B +cin;
+endmodule
 
+module zero32(
+    input logic[31:0] Y,
+    output logic         zero);
+    assign zero = (Y == 32'h0000_0000);
 endmodule
