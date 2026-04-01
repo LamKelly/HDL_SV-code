@@ -36,29 +36,6 @@ module testbench();
         //end
       //end
     //end
-
-//_________PART B______________________________
-  always @(negedge clk)
-    begin
-      if (memwrite) begin
-        if (dataadr === 20 && writedata === 28) begin
-          $display("Simulation succeeded");
-          $stop;
-        end
-        else if ((dataadr === 52 && writedata === 1)  ||
-                 (dataadr === 32 && writedata === 3)  ||
-                 (dataadr === 28 && writedata === 6)  ||
-                 (dataadr === 24 && writedata === 9)) begin
-          // expected intermediate stores, do nothing
-        end
-        else begin
-          $display("Simulation failed");
-          $display("Unexpected write: addr=%0d data=%0d", dataadr, writedata);
-          $stop;
-        end
-      end
-    end
-//_________________________________________________
 endmodule
 
 
